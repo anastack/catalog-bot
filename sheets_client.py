@@ -44,7 +44,9 @@ def extract_drive_direct_url(raw_url: str) -> Optional[str]:
         file_id = match_d.group(1)
         
     if file_id:
-        return f"https://drive.google.com/uc?export=view&id={file_id}"
+        # Из-за новых политик Google Drive, обычные ссылки (uc?export=view) больше не встраиваются в <img>
+        # Используем endpoint для thumbnails (работает для файлов с доступом "По ссылке")
+        return f"https://drive.google.com/thumbnail?id={file_id}&sz=w800"
     return raw_url
 
 class SheetsManager:
