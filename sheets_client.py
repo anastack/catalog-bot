@@ -126,11 +126,15 @@ class SheetsManager:
             return None
             
         try:
-            records = ws.get_all_records()
+            values = ws.get_all_values()
+            if not values or len(values) < 2:
+                return None
+                
+            headers = [str(h).lower().strip() for h in values[0]]
             telegram_id_str = str(telegram_id).strip()
-            for r in records:
-                # Устойчивость к ручному изменению заголовков в таблице
-                r_lower = {str(k).lower().strip(): v for k, v in r.items()}
+            
+            for row in values[1:]:
+                r_lower = dict(zip(headers, row))
                 sheet_tg_id = str(r_lower.get("telegram_id", "")).replace(".0", "").replace("'", "").strip()
                 
                 if sheet_tg_id == telegram_id_str:
@@ -153,20 +157,27 @@ class SheetsManager:
             
         try:
             telegram_id_str = str(telegram_id).strip()
-            records = ws.get_all_records()
+            values = ws.get_all_values()
+            
+            # Если лист совсем пустой (даже без заголовков), пропишем заголовки
+            if not values:
+                ws.append_row(["telegram_id", "name", "phone", "username", "registered_at"])
+                values = ws.get_all_values()
+                
+            headers = [str(h).lower().strip() for h in values[0]]
             
             row_index = -1
-            for i, r in enumerate(records):
-                r_lower = {str(k).lower().strip(): v for k, v in r.items()}
+            for i, row in enumerate(values[1:]):
+                r_lower = dict(zip(headers, row))
                 sheet_tg_id = str(r_lower.get("telegram_id", "")).replace(".0", "").replace("'", "").strip()
                 if sheet_tg_id == telegram_id_str:
-                    row_index = i + 2 # +2 for 1-based index and header offset
+                    row_index = i + 2 # +2 for 1-based index and skipping header
                     break
                     
             now_str = datetime.now().isoformat()
             if row_index != -1:
                 # Row exists, let's update it (preserve registered_at)
-                r_lower = {str(k).lower().strip(): v for k, v in records[row_index - 2].items()}
+                r_lower = dict(zip(headers, values[row_index - 1]))
                 existing_registered_at = r_lower.get("registered_at", now_str)
                 # In gspread v6+, values is the first parameter
                 ws.update(values=[[telegram_id_str, name, phone, username, existing_registered_at]], range_name=f"A{row_index}:E{row_index}")
