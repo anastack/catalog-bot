@@ -129,15 +129,17 @@ class SheetsManager:
             records = ws.get_all_records()
             telegram_id_str = str(telegram_id).strip()
             for r in records:
-                # Safely convert to string and strip in case of whitespace or formatting differences
-                sheet_tg_id = str(r.get("telegram_id", "")).replace(".0", "").strip()
+                # Устойчивость к ручному изменению заголовков в таблице
+                r_lower = {str(k).lower().strip(): v for k, v in r.items()}
+                sheet_tg_id = str(r_lower.get("telegram_id", "")).replace(".0", "").replace("'", "").strip()
+                
                 if sheet_tg_id == telegram_id_str:
                     return Client(
-                        telegram_id=str(r.get("telegram_id", "")),
-                        name=str(r.get("name", "")),
-                        phone=str(r.get("phone", "")),
-                        username=str(r.get("username", "")),
-                        registered_at=str(r.get("registered_at", ""))
+                        telegram_id=sheet_tg_id,
+                        name=str(r_lower.get("name", "")),
+                        phone=str(r_lower.get("phone", "")),
+                        username=str(r_lower.get("username", "")),
+                        registered_at=str(r_lower.get("registered_at", ""))
                     )
             return None
         except Exception as e:
@@ -153,10 +155,10 @@ class SheetsManager:
             telegram_id_str = str(telegram_id).strip()
             records = ws.get_all_records()
             
-            # gspread get_all_records returns dictionaries, let's find the row index
             row_index = -1
             for i, r in enumerate(records):
-                sheet_tg_id = str(r.get("telegram_id", "")).replace(".0", "").strip()
+                r_lower = {str(k).lower().strip(): v for k, v in r.items()}
+                sheet_tg_id = str(r_lower.get("telegram_id", "")).replace(".0", "").replace("'", "").strip()
                 if sheet_tg_id == telegram_id_str:
                     row_index = i + 2 # +2 for 1-based index and header offset
                     break
@@ -164,7 +166,8 @@ class SheetsManager:
             now_str = datetime.now().isoformat()
             if row_index != -1:
                 # Row exists, let's update it (preserve registered_at)
-                existing_registered_at = records[row_index - 2].get("registered_at", now_str)
+                r_lower = {str(k).lower().strip(): v for k, v in records[row_index - 2].items()}
+                existing_registered_at = r_lower.get("registered_at", now_str)
                 # In gspread v6+, values is the first parameter
                 ws.update(values=[[telegram_id_str, name, phone, username, existing_registered_at]], range_name=f"A{row_index}:E{row_index}")
             else:
