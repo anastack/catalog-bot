@@ -127,9 +127,11 @@ class SheetsManager:
             
         try:
             records = ws.get_all_records()
-            telegram_id_str = str(telegram_id)
+            telegram_id_str = str(telegram_id).strip()
             for r in records:
-                if str(r.get("telegram_id", "")) == telegram_id_str:
+                # Safely convert to string and strip in case of whitespace or formatting differences
+                sheet_tg_id = str(r.get("telegram_id", "")).replace(".0", "").strip()
+                if sheet_tg_id == telegram_id_str:
                     return Client(
                         telegram_id=str(r.get("telegram_id", "")),
                         name=str(r.get("name", "")),
@@ -148,13 +150,14 @@ class SheetsManager:
             return
             
         try:
-            telegram_id_str = str(telegram_id)
+            telegram_id_str = str(telegram_id).strip()
             records = ws.get_all_records()
             
             # gspread get_all_records returns dictionaries, let's find the row index
             row_index = -1
             for i, r in enumerate(records):
-                if str(r.get("telegram_id", "")) == telegram_id_str:
+                sheet_tg_id = str(r.get("telegram_id", "")).replace(".0", "").strip()
+                if sheet_tg_id == telegram_id_str:
                     row_index = i + 2 # +2 for 1-based index and header offset
                     break
                     
@@ -162,7 +165,8 @@ class SheetsManager:
             if row_index != -1:
                 # Row exists, let's update it (preserve registered_at)
                 existing_registered_at = records[row_index - 2].get("registered_at", now_str)
-                ws.update(f"A{row_index}:E{row_index}", [[telegram_id_str, name, phone, username, existing_registered_at]])
+                # In gspread v6+, values is the first parameter
+                ws.update(values=[[telegram_id_str, name, phone, username, existing_registered_at]], range_name=f"A{row_index}:E{row_index}")
             else:
                 # Append new client
                 ws.append_row([telegram_id_str, name, phone, username, now_str])
