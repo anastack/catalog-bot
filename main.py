@@ -6,6 +6,7 @@ import json
 import uuid
 from urllib.parse import parse_qsl
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
@@ -57,6 +58,11 @@ async def startup_event():
     """События при запуске приложения."""
     asyncio.create_task(cache.sync_catalog_loop())
     asyncio.create_task(start_bot())
+
+@app.get("/")
+async def serve_webapp():
+    """Отдаёт фронтенд Mini App."""
+    return FileResponse("webapp/index.html")
 
 @app.get("/health")
 async def health_check():
