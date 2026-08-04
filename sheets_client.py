@@ -215,9 +215,12 @@ class SheetsManager:
                     str(item.item_name),
                     str(item.category),
                     str(item.quantity),
-                    str(item.unit)
+                    str(item.unit),
+                    "FALSE"  # Строка "FALSE" для Data Validation галочки
                 ]
-                # Используем append_row по одной строке, так как append_rows может давать сбои с валидацией в новых версиях gspread
-                ws.append_row(row)
+                rows_to_insert.append(row)
+                
+            if rows_to_insert:
+                ws.append_rows(rows_to_insert)
         except Exception as e:
             logger.error(f"Error creating selection: {e}")
