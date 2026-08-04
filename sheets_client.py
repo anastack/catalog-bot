@@ -139,19 +139,20 @@ class SheetsManager:
                 
             telegram_id_str = str(telegram_id).strip()
             
-            for row in values[1:]:
-                raw_tg_id = str(row[0]) if len(row) > 0 else ""
+            # Ищем во ВСЕХ строках и ВСЕХ колонках, чтобы избежать проблем с удалением заголовков или перемещением колонок
+            for row in values:
                 import re
-                sheet_tg_id = re.sub(r'[^\d\-]', '', raw_tg_id)
-                
-                if sheet_tg_id == telegram_id_str:
-                    return Client(
-                        telegram_id=sheet_tg_id,
-                        name=str(row[1]) if len(row) > 1 else "",
-                        phone=str(row[2]) if len(row) > 2 else "",
-                        username=str(row[3]) if len(row) > 3 else "",
-                        registered_at=str(row[4]) if len(row) > 4 else ""
-                    )
+                for idx, col_val in enumerate(row):
+                    clean_val = re.sub(r'[^\d\-]', '', str(col_val))
+                    if clean_val == telegram_id_str:
+                        # Нашли клиента! Возвращаем данные, предполагая дефолтный порядок: 0:tg_id, 1:name, 2:phone, 3:username, 4:registered_at
+                        return Client(
+                            telegram_id=clean_val,
+                            name=str(row[1]) if len(row) > 1 else "",
+                            phone=str(row[2]) if len(row) > 2 else "",
+                            username=str(row[3]) if len(row) > 3 else "",
+                            registered_at=str(row[4]) if len(row) > 4 else ""
+                        )
             return None
         except Exception as e:
             logger.error(f"Error getting client: {e}")
@@ -173,11 +174,13 @@ class SheetsManager:
                 
             row_index = -1
             import re
-            for i, row in enumerate(values[1:]):
-                raw_tg_id = str(row[0]) if len(row) > 0 else ""
-                sheet_tg_id = re.sub(r'[^\d\-]', '', raw_tg_id)
-                if sheet_tg_id == telegram_id_str:
-                    row_index = i + 2 # +2 for 1-based index and skipping header
+            for i, row in enumerate(values):
+                for col_val in row:
+                    clean_val = re.sub(r'[^\d\-]', '', str(col_val))
+                    if clean_val == telegram_id_str:
+                        row_index = i + 1 # +1 for 1-based index
+                        break
+                if row_index != -1:
                     break
                     
             now_str = datetime.now().isoformat()
@@ -185,7 +188,7 @@ class SheetsManager:
                 # Row exists, let's update it (preserve registered_at)
                 existing_row = values[row_index - 1]
                 existing_registered_at = str(existing_row[4]) if len(existing_row) > 4 else now_str
-                # In gspread v6+, values is the first parameter
+                # В gspread v6+ используем именованные параметры
                 ws.update(values=[[telegram_id_str, name, phone, username, existing_registered_at]], range_name=f"A{row_index}:E{row_index}")
             else:
                 # Append new client
