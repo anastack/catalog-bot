@@ -97,23 +97,29 @@ class SheetsManager:
         if not ws:
             return []
             
-        try:
-            records = ws.get_all_records()
+            values = ws.get_all_values()
+            if not values or len(values) < 2:
+                return []
+                
             items = []
-            for r in records:
-                visible_str = str(r.get("visible", "")).strip().lower()
-                is_visible = visible_str in ["true", "1", "yes", "да"]
+            # Пропускаем строку с заголовками (строка 0)
+            for row in values[1:]:
+                # 0: id, 1: category, 2: name, 3: image_url, 4: status, 5: visible, 6: unit
+                visible_val = str(row[5]).strip().lower() if len(row) > 5 else ""
+                is_visible = visible_val in ["true", "1", "yes", "да", "истина"]
                 
                 if is_visible:
-                    image_url = extract_drive_direct_url(str(r.get("image_url", "")))
+                    raw_image_url = str(row[3]) if len(row) > 3 else ""
+                    image_url = extract_drive_direct_url(raw_image_url)
+                    
                     items.append(CatalogItem(
-                        id=str(r.get("id", "")),
-                        category=str(r.get("category", "")),
-                        name=str(r.get("name", "")),
+                        id=str(row[0]) if len(row) > 0 else "",
+                        category=str(row[1]) if len(row) > 1 else "",
+                        name=str(row[2]) if len(row) > 2 else "",
                         image_url=image_url,
-                        status=str(r.get("status", "")),
+                        status=str(row[4]) if len(row) > 4 else "",
                         visible=True,
-                        unit=str(r.get("unit", ""))
+                        unit=str(row[6]) if len(row) > 6 else ""
                     ))
             return items
         except Exception as e:
@@ -130,20 +136,20 @@ class SheetsManager:
             if not values or len(values) < 2:
                 return None
                 
-            headers = [str(h).lower().strip() for h in values[0]]
             telegram_id_str = str(telegram_id).strip()
             
             for row in values[1:]:
-                r_lower = dict(zip(headers, row))
-                sheet_tg_id = str(r_lower.get("telegram_id", "")).replace(".0", "").replace("'", "").strip()
+                raw_tg_id = str(row[0]) if len(row) > 0 else ""
+                import re
+                sheet_tg_id = re.sub(r'[^\d\-]', '', raw_tg_id)
                 
                 if sheet_tg_id == telegram_id_str:
                     return Client(
                         telegram_id=sheet_tg_id,
-                        name=str(r_lower.get("name", "")),
-                        phone=str(r_lower.get("phone", "")),
-                        username=str(r_lower.get("username", "")),
-                        registered_at=str(r_lower.get("registered_at", ""))
+                        name=str(row[1]) if len(row) > 1 else "",
+                        phone=str(row[2]) if len(row) > 2 else "",
+                        username=str(row[3]) if len(row) > 3 else "",
+                        registered_at=str(row[4]) if len(row) > 4 else ""
                     )
             return None
         except Exception as e:
@@ -164,12 +170,11 @@ class SheetsManager:
                 ws.append_row(["telegram_id", "name", "phone", "username", "registered_at"])
                 values = ws.get_all_values()
                 
-            headers = [str(h).lower().strip() for h in values[0]]
-            
             row_index = -1
+            import re
             for i, row in enumerate(values[1:]):
-                r_lower = dict(zip(headers, row))
-                sheet_tg_id = str(r_lower.get("telegram_id", "")).replace(".0", "").replace("'", "").strip()
+                raw_tg_id = str(row[0]) if len(row) > 0 else ""
+                sheet_tg_id = re.sub(r'[^\d\-]', '', raw_tg_id)
                 if sheet_tg_id == telegram_id_str:
                     row_index = i + 2 # +2 for 1-based index and skipping header
                     break
@@ -177,8 +182,8 @@ class SheetsManager:
             now_str = datetime.now().isoformat()
             if row_index != -1:
                 # Row exists, let's update it (preserve registered_at)
-                r_lower = dict(zip(headers, values[row_index - 1]))
-                existing_registered_at = r_lower.get("registered_at", now_str)
+                existing_row = values[row_index - 1]
+                existing_registered_at = str(existing_row[4]) if len(existing_row) > 4 else now_str
                 # In gspread v6+, values is the first parameter
                 ws.update(values=[[telegram_id_str, name, phone, username, existing_registered_at]], range_name=f"A{row_index}:E{row_index}")
             else:
