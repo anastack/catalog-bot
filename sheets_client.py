@@ -217,9 +217,7 @@ class SheetsManager:
                     str(item.quantity),
                     str(item.unit)
                 ]
-                rows_to_insert.append(row)
-                
-            if rows_to_insert:
-                ws.append_rows(rows_to_insert)
+                # Используем append_row по одной строке, так как append_rows может давать сбои с валидацией в новых версиях gspread
+                ws.append_row(row)
         except Exception as e:
             logger.error(f"Error creating selection: {e}")
