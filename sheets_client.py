@@ -205,6 +205,9 @@ class SheetsManager:
             timestamp = datetime.now().isoformat()
             rows_to_insert = []
             for item in items:
+                qty = item.quantity
+                qty_str = str(int(qty)) if qty.is_integer() else str(qty)
+                
                 row = [
                     str(timestamp),
                     str(order_id),
@@ -214,7 +217,7 @@ class SheetsManager:
                     str(item.item_id),
                     str(item.item_name),
                     str(item.category),
-                    str(item.quantity),
+                    qty_str,
                     str(item.unit),
                     "FALSE"  # Строка "FALSE" для Data Validation галочки
                 ]
