@@ -97,6 +97,7 @@ class SheetsManager:
         if not ws:
             return []
             
+        try:
             values = ws.get_all_values()
             if not values or len(values) < 2:
                 return []
