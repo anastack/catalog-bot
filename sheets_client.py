@@ -83,7 +83,7 @@ class SheetsManager:
                 elif title == "Clients":
                     ws.append_row(["telegram_id", "name", "phone", "username", "registered_at"])
                 elif title == "Selections":
-                    ws.append_row(["timestamp", "order_id", "client_name", "phone", "telegram_id", "item_id", "item_name", "category", "quantity", "unit"])
+                    ws.append_row(["timestamp", "order_id", "client_name", "phone", "telegram_id", "item_id", "item_name", "category", "quantity", "unit", "Статус"])
                 return ws
             except Exception as e:
                 logger.error(f"Failed to create worksheet {title}: {e}")
@@ -212,7 +212,8 @@ class SheetsManager:
                     item.item_name,
                     item.category,
                     item.quantity,
-                    item.unit
+                    item.unit,
+                    False  # Значение для галочки (False = не сделано)
                 ]
                 rows_to_insert.append(row)
                 
