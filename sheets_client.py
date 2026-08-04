@@ -203,17 +203,16 @@ class SheetsManager:
             rows_to_insert = []
             for item in items:
                 row = [
-                    timestamp,
-                    order_id,
-                    client.name,
-                    client.phone,
-                    client.telegram_id,
-                    item.item_id,
-                    item.item_name,
-                    item.category,
-                    item.quantity,
-                    item.unit,
-                    False  # Значение для галочки (False = не сделано)
+                    str(timestamp),
+                    str(order_id),
+                    str(client.name),
+                    str(client.phone),
+                    str(client.telegram_id),
+                    str(item.item_id),
+                    str(item.item_name),
+                    str(item.category),
+                    str(item.quantity),
+                    str(item.unit)
                 ]
                 rows_to_insert.append(row)
                 
