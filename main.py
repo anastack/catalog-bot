@@ -62,7 +62,14 @@ async def startup_event():
 @app.get("/")
 async def serve_webapp():
     """Отдаёт фронтенд Mini App."""
-    return FileResponse("webapp/index.html")
+    return FileResponse(
+        "webapp/index.html",
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        }
+    )
 
 @app.get("/health")
 async def health_check():
