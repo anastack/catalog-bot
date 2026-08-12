@@ -219,7 +219,7 @@ class SheetsManager:
                     str(item.category),
                     qty_str,
                     str(item.unit),
-                    "FALSE"  # Строка "FALSE" для Data Validation галочки
+                    str(item.extra_info) if item.extra_info else ""
                 ]
                 rows_to_insert.append(row)
                 

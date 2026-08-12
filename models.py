@@ -23,6 +23,7 @@ class CartItem(BaseModel):
     category: str
     quantity: float
     unit: str
+    extra_info: str = ""
 
 class SelectionPayload(BaseModel):
     order_id: str
@@ -32,6 +33,7 @@ class SelectionPayload(BaseModel):
 class CartItemInput(BaseModel):
     item_id: str
     quantity: float
+    extra_info: Optional[str] = ""
 
 class SubmitCartRequest(BaseModel):
     initData: str
