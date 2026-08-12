@@ -573,26 +573,6 @@
 
             const qty = cart[item.id] || 0;
             
-            let extraSelectHtml = '';
-            const catLower = item.category.toLowerCase();
-            if (catLower.includes('двер')) {
-                if (!cartExtra[item.id]) cartExtra[item.id] = 'без стекла';
-                extraSelectHtml = `
-                    <select class="extra-select" onchange="updateExtra('${item.id}', this.value)" style="margin-bottom: 8px; width: 100%; padding: 4px; border-radius: 4px; border: 1px solid var(--secondary-bg); font-family: var(--font-family); background: var(--bg-color); color: var(--text-color);">
-                        <option value="без стекла" ${cartExtra[item.id] === 'без стекла' ? 'selected' : ''}>без стекла</option>
-                        <option value="со стеклом" ${cartExtra[item.id] === 'со стеклом' ? 'selected' : ''}>со стеклом</option>
-                    </select>
-                `;
-            } else if (catLower.includes('смесител')) {
-                if (!cartExtra[item.id]) cartExtra[item.id] = 'черный';
-                extraSelectHtml = `
-                    <select class="extra-select" onchange="updateExtra('${item.id}', this.value)" style="margin-bottom: 8px; width: 100%; padding: 4px; border-radius: 4px; border: 1px solid var(--secondary-bg); font-family: var(--font-family); background: var(--bg-color); color: var(--text-color);">
-                        <option value="черный" ${cartExtra[item.id] === 'черный' ? 'selected' : ''}>черный</option>
-                        <option value="хром" ${cartExtra[item.id] === 'хром' ? 'selected' : ''}>хром</option>
-                    </select>
-                `;
-            }
-            
             let actionHtml = '';
             if (!inStock) {
                 actionHtml = `<button class="btn-add" disabled>Нет в наличии</button>`;
@@ -616,21 +596,11 @@
                         <div class="product-name">${item.name}</div>
                         <div class="product-meta">Ед. изм: ${item.unit}</div>
                     </div>
-                    <div class="action-area">
-                        ${extraSelectHtml}
-                        <div id="action-${item.id}">
-                            ${actionHtml}
-                        </div>
+                    <div class="action-area" id="action-${item.id}">
+                        ${actionHtml}
                     </div>
                 </div>
             `;
-        }
-
-        function updateExtra(itemId, val) {
-            cartExtra[itemId] = val;
-            if (cart[itemId]) {
-                renderCartModal();
-            }
         }
 
         function triggerHaptic() {
@@ -642,12 +612,53 @@
             const current = cart[itemId] || 0;
             const newVal = Math.max(0, current + delta);
             
+            if (newVal === 1 && current === 0) {
+                const item = catalog.find(i => i.id === itemId);
+                if (item) {
+                    const catLower = item.category.toLowerCase();
+                    if (catLower.includes('двер') || item.category === 'Двери') {
+                        tg.showPopup({
+                            title: 'Опции',
+                            message: 'Выберите вариант:',
+                            buttons: [
+                                {id: 'без стекла', type: 'default', text: 'Без стекла'},
+                                {id: 'со стеклом', type: 'default', text: 'Со стеклом'}
+                            ]
+                        }, function(btnId) {
+                            if (btnId) {
+                                cartExtra[itemId] = btnId;
+                                finishUpdateQty(itemId, newVal);
+                            }
+                        });
+                        return;
+                    } else if (catLower.includes('смесител') || item.category === 'Смеситель') {
+                        tg.showPopup({
+                            title: 'Цвет',
+                            message: 'Выберите цвет:',
+                            buttons: [
+                                {id: 'черный', type: 'default', text: 'Черный'},
+                                {id: 'хром', type: 'default', text: 'Хром'}
+                            ]
+                        }, function(btnId) {
+                            if (btnId) {
+                                cartExtra[itemId] = btnId;
+                                finishUpdateQty(itemId, newVal);
+                            }
+                        });
+                        return;
+                    }
+                }
+            }
+            finishUpdateQty(itemId, newVal);
+        }
+
+        function finishUpdateQty(itemId, newVal) {
             if (newVal === 0) {
                 delete cart[itemId];
+                delete cartExtra[itemId];
             } else {
                 cart[itemId] = newVal;
             }
-            
             updateUIAfterCartChange(itemId);
         }
 
@@ -655,6 +666,7 @@
             const num = parseFloat(val);
             if (isNaN(num) || num <= 0) {
                 delete cart[itemId];
+                delete cartExtra[itemId];
             } else {
                 cart[itemId] = num;
             }
@@ -664,6 +676,7 @@
         function removeFromCart(itemId) {
             triggerHaptic();
             delete cart[itemId];
+            delete cartExtra[itemId];
             updateUIAfterCartChange(itemId);
             renderCartModal();
         }
