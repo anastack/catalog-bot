@@ -574,7 +574,8 @@
             const qty = cart[item.id] || 0;
             
             let extraSelectHtml = '';
-            if (item.category === 'Двери') {
+            const catLower = item.category.toLowerCase();
+            if (catLower.includes('двер')) {
                 if (!cartExtra[item.id]) cartExtra[item.id] = 'без стекла';
                 extraSelectHtml = `
                     <select class="extra-select" onchange="updateExtra('${item.id}', this.value)" style="margin-bottom: 8px; width: 100%; padding: 4px; border-radius: 4px; border: 1px solid var(--secondary-bg); font-family: var(--font-family); background: var(--bg-color); color: var(--text-color);">
@@ -582,7 +583,7 @@
                         <option value="со стеклом" ${cartExtra[item.id] === 'со стеклом' ? 'selected' : ''}>со стеклом</option>
                     </select>
                 `;
-            } else if (item.category === 'Смеситель') {
+            } else if (catLower.includes('смесител')) {
                 if (!cartExtra[item.id]) cartExtra[item.id] = 'черный';
                 extraSelectHtml = `
                     <select class="extra-select" onchange="updateExtra('${item.id}', this.value)" style="margin-bottom: 8px; width: 100%; padding: 4px; border-radius: 4px; border: 1px solid var(--secondary-bg); font-family: var(--font-family); background: var(--bg-color); color: var(--text-color);">
