@@ -461,6 +461,19 @@
         </div>
     </div>
 
+    <!-- Option Modal -->
+    <div class="cart-modal" id="optionModal" style="z-index: 2500;">
+        <div class="cart-header">
+            <button class="btn-close" onclick="closeOptionModal()">Отмена</button>
+            <div class="cart-title">Опции</div>
+        </div>
+        <div style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+            <div id="optionModalQuestion" style="font-size: 18px; font-weight: 600; text-align: center; margin-bottom: 8px;"></div>
+            <button class="btn-add" id="optionBtn1" style="height: 48px; font-size: 16px;"></button>
+            <button class="btn-add" id="optionBtn2" style="height: 48px; font-size: 16px; background: var(--secondary-bg); color: var(--text-color);"></button>
+        </div>
+    </div>
+
     <script>
         const tg = window.Telegram.WebApp;
         
@@ -585,7 +598,7 @@
                     </div>
                 `;
             } else {
-                actionHtml = `<button class="btn-add" onclick="updateQty('${item.id}', 1)">Добавить</button>`;
+                actionHtml = `<button class="btn-add" onclick="handleAddClick('${item.id}')">Добавить</button>`;
             }
 
             return `
@@ -607,52 +620,55 @@
             tg.HapticFeedback.impactOccurred('light');
         }
 
+        function handleAddClick(itemId) {
+            triggerHaptic();
+            const item = catalog.find(i => i.id === itemId);
+            if (!item) return;
+            const catLower = item.category.toLowerCase();
+            if (catLower.includes('двер') || item.category === 'Двери') {
+                showOptionModal(itemId, 'Дверь со стеклом или без?', ['Со стеклом', 'Без стекла']);
+            } else if (catLower.includes('смесител') || item.category === 'Смеситель') {
+                showOptionModal(itemId, 'Выберите цвет:', ['Хром', 'Черный']);
+            } else {
+                updateQty(itemId, 1);
+            }
+        }
+
+        let pendingItemId = null;
+        function showOptionModal(itemId, question, options) {
+            pendingItemId = itemId;
+            document.getElementById('optionModalQuestion').textContent = question;
+            const btn1 = document.getElementById('optionBtn1');
+            const btn2 = document.getElementById('optionBtn2');
+            
+            btn1.textContent = options[0];
+            btn1.onclick = () => { selectOption(options[0]); };
+            
+            btn2.textContent = options[1];
+            btn2.onclick = () => { selectOption(options[1]); };
+            
+            document.getElementById('optionModal').classList.add('open');
+        }
+        
+        function closeOptionModal() {
+            document.getElementById('optionModal').classList.remove('open');
+            pendingItemId = null;
+        }
+        
+        function selectOption(optionStr) {
+            if (pendingItemId) {
+                cartExtra[pendingItemId] = optionStr;
+                const id = pendingItemId;
+                closeOptionModal();
+                updateQty(id, 1);
+            }
+        }
+
         function updateQty(itemId, delta) {
             triggerHaptic();
             const current = cart[itemId] || 0;
             const newVal = Math.max(0, current + delta);
             
-            if (newVal === 1 && current === 0) {
-                const item = catalog.find(i => i.id === itemId);
-                if (item) {
-                    const catLower = item.category.toLowerCase();
-                    if (catLower.includes('двер') || item.category === 'Двери') {
-                        tg.showPopup({
-                            title: 'Опции',
-                            message: 'Выберите вариант:',
-                            buttons: [
-                                {id: 'без стекла', type: 'default', text: 'Без стекла'},
-                                {id: 'со стеклом', type: 'default', text: 'Со стеклом'}
-                            ]
-                        }, function(btnId) {
-                            if (btnId) {
-                                cartExtra[itemId] = btnId;
-                                finishUpdateQty(itemId, newVal);
-                            }
-                        });
-                        return;
-                    } else if (catLower.includes('смесител') || item.category === 'Смеситель') {
-                        tg.showPopup({
-                            title: 'Цвет',
-                            message: 'Выберите цвет:',
-                            buttons: [
-                                {id: 'черный', type: 'default', text: 'Черный'},
-                                {id: 'хром', type: 'default', text: 'Хром'}
-                            ]
-                        }, function(btnId) {
-                            if (btnId) {
-                                cartExtra[itemId] = btnId;
-                                finishUpdateQty(itemId, newVal);
-                            }
-                        });
-                        return;
-                    }
-                }
-            }
-            finishUpdateQty(itemId, newVal);
-        }
-
-        function finishUpdateQty(itemId, newVal) {
             if (newVal === 0) {
                 delete cart[itemId];
                 delete cartExtra[itemId];
