@@ -478,7 +478,7 @@
     <div class="cart-modal" id="imagePreviewModal" style="z-index: 3000; background: rgba(0,0,0,0.9);">
         <button class="btn-close" onclick="closeImagePreview()" style="position: absolute; top: 16px; right: 16px; color: white; background: rgba(0,0,0,0.5); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; z-index: 3001; font-size: 18px;">✕</button>
         <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: auto; position: relative;" id="imagePreviewContainer">
-            <img id="previewImage" src="" style="max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: center;" onclick="toggleZoom(event)">
+            <img id="previewImage" src="" style="max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.1s ease-out; transform-origin: center;">
         </div>
         <div id="previewTitle" style="position: absolute; bottom: 32px; left: 16px; right: 16px; color: white; text-align: center; font-weight: 600; font-size: 16px; text-shadow: 0 1px 4px rgba(0,0,0,0.8); pointer-events: none;"></div>
     </div>
@@ -505,6 +505,7 @@
         tg.MainButton.onClick(submitCart);
 
         async function init() {
+            initPinchToZoom();
             try {
                 // Если разрабатываете локально, можно заменить API_BASE_URL на 'http://localhost:8000'
                 const response = await fetch(`${API_BASE_URL}/catalog`);
@@ -629,17 +630,19 @@
             tg.HapticFeedback.impactOccurred('light');
         }
 
-        let isZoomed = false;
         let scaleValue = 1;
+        let pannedX = 0;
+        let pannedY = 0;
         
         function openImagePreview(imageUrl, title) {
             triggerHaptic();
             if (!imageUrl) return;
             const img = document.getElementById('previewImage');
             img.src = imageUrl;
-            img.style.transform = 'scale(1) translate(0px, 0px)';
-            isZoomed = false;
             scaleValue = 1;
+            pannedX = 0;
+            pannedY = 0;
+            updateTransform();
             document.getElementById('previewTitle').textContent = title;
             document.getElementById('imagePreviewModal').classList.add('open');
         }
@@ -647,38 +650,91 @@
         function closeImagePreview() {
             document.getElementById('imagePreviewModal').classList.remove('open');
         }
-
-        function toggleZoom(event) {
+        
+        function updateTransform() {
             const img = document.getElementById('previewImage');
-            isZoomed = !isZoomed;
-            
-            if (isZoomed) {
-                // Zoom in on click point
-                const rect = img.getBoundingClientRect();
-                const containerRect = document.getElementById('imagePreviewContainer').getBoundingClientRect();
-                
-                // Calculate click position relative to the image center
-                const clickX = event.clientX - rect.left;
-                const clickY = event.clientY - rect.top;
-                
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-                
-                const percentX = (clickX - centerX) / rect.width;
-                const percentY = (clickY - centerY) / rect.height;
-                
-                scaleValue = 2.5;
-                const maxTranslateX = (rect.width * scaleValue - containerRect.width) / 2;
-                const maxTranslateY = (rect.height * scaleValue - containerRect.height) / 2;
-                
-                // We do a simple scale without translate to keep it robust and simple for the user
-                img.style.transform = `scale(${scaleValue})`;
-                img.style.cursor = 'zoom-out';
-            } else {
-                scaleValue = 1;
-                img.style.transform = `scale(1)`;
-                img.style.cursor = 'zoom-in';
+            if (img) {
+                img.style.transform = `translate(${pannedX}px, ${pannedY}px) scale(${scaleValue})`;
             }
+        }
+
+        function initPinchToZoom() {
+            const container = document.getElementById('imagePreviewContainer');
+            if (!container) return;
+            
+            let startX, startY;
+            let startPanX, startPanY;
+            let initialDist = 0;
+            let isPanning = false;
+            let lastTap = 0;
+
+            container.addEventListener('touchstart', function(e) {
+                if (e.touches.length === 1) {
+                    const currentTime = new Date().getTime();
+                    const tapLength = currentTime - lastTap;
+                    if (tapLength < 300 && tapLength > 0) {
+                        // Double tap to zoom in/out
+                        if (scaleValue > 1) {
+                            scaleValue = 1;
+                            pannedX = 0;
+                            pannedY = 0;
+                        } else {
+                            scaleValue = 2.5;
+                        }
+                        updateTransform();
+                        e.preventDefault();
+                    }
+                    lastTap = currentTime;
+
+                    if (scaleValue > 1) {
+                        isPanning = true;
+                        startX = e.touches[0].clientX;
+                        startY = e.touches[0].clientY;
+                        startPanX = pannedX;
+                        startPanY = pannedY;
+                    }
+                } else if (e.touches.length === 2) {
+                    isPanning = false;
+                    initialDist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                }
+            }, { passive: false });
+
+            container.addEventListener('touchmove', function(e) {
+                if (e.touches.length === 1 && isPanning) {
+                    e.preventDefault();
+                    const dx = e.touches[0].clientX - startX;
+                    const dy = e.touches[0].clientY - startY;
+                    pannedX = startPanX + dx;
+                    pannedY = startPanY + dy;
+                    updateTransform();
+                } else if (e.touches.length === 2) {
+                    e.preventDefault();
+                    const currentDist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    const delta = currentDist / initialDist;
+                    let newScale = scaleValue * delta;
+                    
+                    if (newScale < 1) newScale = 1;
+                    if (newScale > 5) newScale = 5;
+                    
+                    scaleValue = newScale;
+                    if (scaleValue === 1) {
+                        pannedX = 0;
+                        pannedY = 0;
+                    }
+                    updateTransform();
+                    initialDist = currentDist;
+                }
+            }, { passive: false });
+
+            container.addEventListener('touchend', function(e) {
+                isPanning = false;
+            });
         }
 
         function handleAddClick(itemId) {
