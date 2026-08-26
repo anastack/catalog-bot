@@ -137,10 +137,11 @@ async def submit_cart(request: SubmitCartRequest, background_tasks: BackgroundTa
         )
         final_cart_items.append(cart_item)
         
-        # Форматируем строку: • Ламинат дуб — 24 м²
+        # Форматируем строку: 1. [Артикул] Название (Доп) — 24 м²
         qty_str = f"{input_item.quantity:g}" # removes trailing zero decimals (e.g. 24.0 -> 24)
         extra_str = f" ({input_item.extra_info})" if input_item.extra_info else ""
-        notification_lines.append(f"• {cat_item.name}{extra_str} — {qty_str} {cat_item.unit}")
+        item_idx = len(final_cart_items)
+        notification_lines.append(f"{item_idx}. [Арт: {cat_item.id}] {cat_item.name}{extra_str} — {qty_str} {cat_item.unit}")
         
     if not final_cart_items:
         raise HTTPException(status_code=400, detail="Cart is empty or contains invalid items")
