@@ -81,7 +81,7 @@ class SheetsManager:
                 if title == "Catalog":
                     ws.append_row(["id", "category", "name", "image_url", "status", "visible", "unit"])
                 elif title == "Clients":
-                    ws.append_row(["telegram_id", "name", "phone", "username", "registered_at"])
+                    ws.append_row(["telegram_id", "name", "phone", "username", "registered_at", "lcd", "apt"])
                 elif title == "Selections":
                     ws.append_row(["timestamp", "order_id", "client_name", "phone", "telegram_id", "item_id", "item_name", "category", "quantity", "unit", "Статус"])
                 return ws
@@ -158,7 +158,7 @@ class SheetsManager:
             logger.error(f"Error getting client: {e}")
             return None
 
-    def save_or_update_client(self, telegram_id: str, name: str, phone: str, username: str = ""):
+    def save_or_update_client(self, telegram_id: str, name: str, phone: str, username: str = "", lcd: str = "", apt: str = ""):
         ws = self._get_worksheet("Clients")
         if not ws:
             return
@@ -169,7 +169,7 @@ class SheetsManager:
             
             # Если лист совсем пустой (даже без заголовков), пропишем заголовки
             if not values:
-                ws.append_row(["telegram_id", "name", "phone", "username", "registered_at"])
+                ws.append_row(["telegram_id", "name", "phone", "username", "registered_at", "lcd", "apt"])
                 values = ws.get_all_values()
                 
             row_index = -1
@@ -185,14 +185,13 @@ class SheetsManager:
                     
             now_str = datetime.now().isoformat()
             if row_index != -1:
-                # Row exists, let's update it (preserve registered_at)
+                # Row exists, update preserving registered_at
                 existing_row = values[row_index - 1]
                 existing_registered_at = str(existing_row[4]) if len(existing_row) > 4 else now_str
-                # В gspread v6+ используем именованные параметры
-                ws.update(values=[[telegram_id_str, name, phone, username, existing_registered_at]], range_name=f"A{row_index}:E{row_index}")
+                ws.update(values=[[telegram_id_str, name, phone, username, existing_registered_at, lcd, apt]], range_name=f"A{row_index}:G{row_index}")
             else:
                 # Append new client
-                ws.append_row([telegram_id_str, name, phone, username, now_str])
+                ws.append_row([telegram_id_str, name, phone, username, now_str, lcd, apt])
         except Exception as e:
             logger.error(f"Error saving client: {e}")
 
