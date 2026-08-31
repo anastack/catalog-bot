@@ -511,6 +511,7 @@
                 const response = await fetch(`${API_BASE_URL}/catalog`);
                 if (!response.ok) throw new Error('Network response was not ok');
                 catalog = await response.json();
+                console.log('[catalog] loaded items:', catalog.map(i => `id=${i.id} cat="${i.category}"`));
                 
                 extractCategories();
                 renderTabs();
