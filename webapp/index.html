@@ -741,12 +741,17 @@
             triggerHaptic();
             const item = catalog.find(i => i.id === itemId);
             if (!item) return;
-            const catLower = item.category.toLowerCase();
-            if (catLower.includes('двер') || item.category === 'Двери') {
+            const category = item.category.trim().toLowerCase();
+            const DOOR_CATEGORIES = ['двери', 'дверь'];
+            const MIXER_CATEGORIES = ['смеситель'];
+            if (DOOR_CATEGORIES.includes(category)) {
+                // Door – ask about glass
                 showOptionModal(itemId, 'Дверь со стеклом или без?', ['Со стеклом', 'Без стекла']);
-            } else if (catLower.includes('смесител') || item.category === 'Смеситель') {
+            } else if (MIXER_CATEGORIES.includes(category)) {
+                // Mixer – ask about color
                 showOptionModal(itemId, 'Выберите цвет:', ['Хром', 'Черный']);
             } else {
+                // Other categories – add directly to cart
                 updateQty(itemId, 1);
             }
         }
