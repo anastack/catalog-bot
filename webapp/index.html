@@ -742,6 +742,7 @@
             const item = catalog.find(i => i.id === itemId);
             if (!item) return;
             const category = item.category.trim().toLowerCase();
+            console.log('[handleAddClick] itemId:', itemId, '| raw category:', JSON.stringify(item.category), '| lower:', category);
             const DOOR_CATEGORIES = ['двери', 'дверь'];
             const MIXER_CATEGORIES = ['смеситель'];
             if (DOOR_CATEGORIES.includes(category)) {

@@ -6,9 +6,9 @@ def get_webapp_keyboard() -> InlineKeyboardMarkup:
     
     # Добавляем параметр для сброса жесткого кэша в Telegram
     if "?" in miniapp_url:
-        miniapp_url += "&v=2"
+        miniapp_url += "&v=3"
     else:
-        miniapp_url += "?v=2"
+        miniapp_url += "?v=3"
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
