@@ -511,7 +511,6 @@
                 const response = await fetch(`${API_BASE_URL}/catalog`);
                 if (!response.ok) throw new Error('Network response was not ok');
                 catalog = await response.json();
-                console.log('[catalog] loaded items:', catalog.map(i => `id=${i.id} cat="${i.category}"`));
                 
                 extractCategories();
                 renderTabs();
@@ -743,7 +742,6 @@
             const item = catalog.find(i => i.id === itemId);
             if (!item) return;
             const category = item.category.trim().toLowerCase();
-            console.log('[handleAddClick] itemId:', itemId, '| raw category:', JSON.stringify(item.category), '| lower:', category);
             const DOOR_CATEGORIES = ['двери', 'дверь'];
             const MIXER_CATEGORIES = ['смеситель'];
             if (DOOR_CATEGORIES.includes(category)) {
